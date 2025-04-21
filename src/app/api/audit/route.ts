@@ -631,7 +631,7 @@ export async function POST(request: Request) {
         mobile: Object.entries(
           psiData.mobile.lighthouseResult.audits
         )
-          .filter(([, audit]) => audit.score !== 1)
+          .filter(([, audit]) => (audit as any).score !== 1)
           .map(([id, audit]) => ({
             id,
             title: (audit as any).title,
@@ -640,7 +640,7 @@ export async function POST(request: Request) {
         desktop: Object.entries(
           psiData.desktop.lighthouseResult.audits
         )
-          .filter(([, audit]) => audit.score !== 1)
+          .filter(([, audit]) => (audit as any).score !== 1)
           .map(([id, audit]) => ({
             id,
             title: (audit as any).title,
