@@ -1,3 +1,6 @@
+{{ /* eslint-disable @typescript-eslint/no-unused-vars,@typescript-eslint/no-explicit-any */ }}
+export const runtime = 'nodejs';
+
 import { NextResponse } from 'next/server';
 import { load } from 'cheerio';
 import robotsParser from 'robots-parser';
