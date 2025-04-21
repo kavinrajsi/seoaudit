@@ -1,0 +1,52 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        Int             @id @default(autoincrement())
+  email     String          @unique
+  name      String?
+  audits    AuditHistory[]  @relation("UserAudits")
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+}
+
+model Website {
+  id        Int             @id @default(autoincrement())
+  url       String          @unique
+  user      User?           @relation(fields: [userId], references: [id], name: "UserWebsites")
+  userId    Int?
+  audits    AuditHistory[]  @relation("WebsiteAudits")
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+}
+
+model AuditHistory {
+  id                    Int       @id @default(autoincrement())
+  website               Website   @relation(fields: [websiteId], references: [id], name: "WebsiteAudits")
+  websiteId             Int
+  user                  User?     @relation(fields: [userId], references: [id], name: "UserAudits")
+  userId                Int?
+  recordedAt            DateTime  @default(now())
+  title                 String
+  titleLength           Int
+  metaDescription       String
+  metaDescriptionLength Int
+  serpSnippet           String
+  metaImage             String?
+  favicon               String?
+  h1Tags                Json
+  internalLinks         Json
+  externalLinks         Json
+  hreflang              Json
+  brokenLinks           Json
+  performanceMetrics    Json
+  performanceComparison Json
+  technologies          Json
+  structuredDataIssues  Json
+}
