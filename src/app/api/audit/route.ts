@@ -10,6 +10,7 @@ import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { auditCache, historyCache, CacheEntry } from '../../../lib/auditCache';
 import dayjs from 'dayjs';
 import whois from 'whois-json';
+import { supabase } from '../../../lib/supabaseClient';
 
 // Normalize URL helper for relative paths
 const getAbsoluteUrl = (src: string, parsedUrl: URL): string => {
@@ -178,6 +179,9 @@ export async function POST(request: Request) {
     console.log(`Returning cached audit for ${url}`);
     if (exportType === 'pdf') {
       // Return cached PDF report
+      const timestamp = dayjs().format('YYYYMMDD_HHmmss');
+      const hostname = new URL(url).hostname.replace(/\./g, '_');
+      const filename = `${hostname}_${timestamp}.pdf`;
       const pdfBytes = await generatePdf(
         cached.data as Record<string, unknown>,
         template || 'default'
@@ -186,17 +190,20 @@ export async function POST(request: Request) {
         status: 200,
         headers: {
           'Content-Type': 'application/pdf',
-          'Content-Disposition': 'attachment; filename="audit.pdf"',
+          'Content-Disposition': `attachment; filename="${filename}"`,
         },
       });
     } else if (exportType === 'csv') {
+      const timestamp = dayjs().format('YYYYMMDD_HHmmss');
+      const hostname = new URL(url).hostname.replace(/\./g, '_');
+      const filename = `${hostname}_${timestamp}.csv`;
       const csv = jsonToCsv(cached.data as Record<string, unknown>);
       return new NextResponse(csv, {
         status: 200,
         headers: {
           'Content-Type': 'text/csv',
-          'Content-Disposition': 'attachment; filename="audit.csv"'
-        }
+          'Content-Disposition': `attachment; filename="${filename}"`,
+        },
       });
     }
     return NextResponse.json(cached.data);
@@ -679,24 +686,38 @@ export async function POST(request: Request) {
     }
     historyCache.get(url)?.push({ timestamp: now, data: responseData });
     if (exportType === 'pdf') {
-      // Generate PDF from fresh data
+      const timestamp = dayjs().format('YYYYMMDD_HHmmss');
+      const hostname = parsedUrl.hostname.replace(/\./g, '_');
+      const filename = `${hostname}_${timestamp}.pdf`;
       const pdfBytes = await generatePdf(responseData, template || 'default');
       return new NextResponse(pdfBytes, {
         status: 200,
         headers: {
           'Content-Type': 'application/pdf',
-          'Content-Disposition': 'attachment; filename="audit.pdf"',
+          'Content-Disposition': `attachment; filename="${filename}"`,
         },
       });
     } else if (exportType === 'csv') {
+      const timestamp = dayjs().format('YYYYMMDD_HHmmss');
+      const hostname = parsedUrl.hostname.replace(/\./g, '_');
+      const filename = `${hostname}_${timestamp}.csv`;
       const csv = jsonToCsv(responseData as Record<string, unknown>);
       return new NextResponse(csv, {
         status: 200,
         headers: {
           'Content-Type': 'text/csv',
-          'Content-Disposition': 'attachment; filename="audit.csv"'
-        }
+          'Content-Disposition': `attachment; filename="${filename}"`,
+        },
       });
+    }
+    // Store audit in Supabase
+    try {
+      const { error: supabaseError } = await supabase
+        .from('seoaudit')
+        .insert([{ site_url: url, audit_data: responseData }]);
+      if (supabaseError) console.error('Supabase insert error:', supabaseError);
+    } catch (e) {
+      console.error('Supabase insert exception:', e);
     }
     return NextResponse.json(responseData);
   } catch (err: unknown) {

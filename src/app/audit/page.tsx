@@ -210,7 +210,25 @@ export default function AuditPage() {
       });
       const json = await res.json();
       if (!res.ok) {
-        setErrorMsg(json.error || "Audit failed");
+        const statusGroup = Math.floor(res.status / 100);
+        let msg = '';
+        switch (statusGroup) {
+          case 1:
+            msg = `${res.status} Informational response`;
+            break;
+          case 3:
+            msg = `${res.status} Redirection response`;
+            break;
+          case 4:
+            msg = `Client Error ${res.status}: ${json.error || res.statusText}`;
+            break;
+          case 5:
+            msg = `Server Error ${res.status}: ${json.error || res.statusText}`;
+            break;
+          default:
+            msg = `${res.status} ${json.error || res.statusText}`;
+        }
+        setErrorMsg(msg);
       } else {
         setAuditData(json);
       }
