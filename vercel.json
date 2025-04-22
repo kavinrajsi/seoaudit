@@ -1,7 +1,7 @@
 {
   "functions": {
     "api/audit/**": {
-      "maxDuration": 60
+      "maxDuration": 58
     }
   }
 }
